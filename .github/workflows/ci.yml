@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7.0.0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.23"
       - name: golangci-lint
@@ -26,7 +26,7 @@ jobs:
     runs-on: [self-hosted, linux, x64]
     steps:
       - uses: actions/checkout@v7.0.0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.23"
       - name: Run tests
@@ -42,7 +42,7 @@ jobs:
     needs: [lint, test]
     steps:
       - uses: actions/checkout@v7.0.0
-      - uses: actions/setup-go@v6
+      - uses: actions/setup-go@v7
         with:
           go-version: "1.23"
       - name: Build
