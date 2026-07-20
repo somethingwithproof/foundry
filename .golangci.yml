@@ -12,7 +12,7 @@ linters:
     - unused
     - gosimple
     - ineffassign
-    - typecheck
+
     - gofmt
     - goimports
     - misspell
