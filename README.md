@@ -1,7 +1,7 @@
 # Foundry
 
 [![CI](https://github.com/somethingwithproof/foundry/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/somethingwithproof/foundry/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache-2.0-blue)](./LICENSE)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Go minimum](https://img.shields.io/badge/Go_minimum-1.23.6-blue)](./go.mod)
 
 A profile-based CI runner that turns a YAML configuration into a dependency-ordered execution plan. The same `anvil` CLI can inspect the plan and execute commands locally or inside a CI job.
@@ -56,7 +56,7 @@ bin/anvil run --profile default --jobs 4
 | `doctor` | `--config` |
 | `plan` | `--config`, `--profile`, `--json` |
 | `run` | `--config`, `--profile`, `--jobs`, `--json` |
-| `version` | See [CLI implementation](cmd/anvil/main.go) |
+| `version` | `--json` |
 
 The default configuration is `.foundry.yaml`, the default profile is `default`, and run concurrency defaults to four jobs. Commands execute with the caller's privileges. Review configuration from untrusted sources before running it.
 
