@@ -1,8 +1,9 @@
 # Foundry
 
 [![CI](https://github.com/somethingwithproof/foundry/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/somethingwithproof/foundry/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![Go minimum](https://img.shields.io/badge/Go_minimum-1.23.6-blue)](./go.mod)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
+[![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/somethingwithproof/foundry/badge)](https://scorecard.dev/viewer/?uri=github.com/somethingwithproof/foundry)
 
 A profile-based CI runner that turns a YAML configuration into a dependency-ordered execution plan. The same `anvil` CLI can inspect the plan and execute commands locally or inside a CI job.
 
