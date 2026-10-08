@@ -1,6 +1,7 @@
 # Foundry
 
 [![CI](https://github.com/somethingwithproof/foundry/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/somethingwithproof/foundry/actions/workflows/ci.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=somethingwithproof_foundry&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=somethingwithproof_foundry)
 [![Go minimum](https://img.shields.io/badge/Go_minimum-1.23.6-blue)](./go.mod)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/somethingwithproof/foundry/badge)](https://scorecard.dev/viewer/?uri=github.com/somethingwithproof/foundry)
