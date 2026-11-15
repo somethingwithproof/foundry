@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Vincent <thomasvincent@gmail.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // Package exec provides execution logic for Foundry CI/CD plans.
 package exec
 
