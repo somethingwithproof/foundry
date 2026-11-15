@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Vincent <thomasvincent@gmail.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // Package plan provides plan building and topological sorting for Foundry CI/CD pipelines.
 package plan
 

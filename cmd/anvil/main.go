@@ -1,3 +1,6 @@
+// SPDX-FileCopyrightText: 2026 Thomas Vincent <thomasvincent@gmail.com>
+// SPDX-License-Identifier: Apache-2.0
+
 // Package main implements the anvil CLI for the Foundry CI/CD engine.
 package main
 

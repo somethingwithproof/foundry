@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Thomas Vincent <thomasvincent@gmail.com>
+# SPDX-License-Identifier: Apache-2.0
+
 .PHONY: build test lint clean install fmt vet all
 
 VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
