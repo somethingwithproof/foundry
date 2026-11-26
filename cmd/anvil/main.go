@@ -185,27 +185,7 @@ func cmdPlan(args []string) {
 
 	setupLogger(*jsonOut)
 
-	cfg, steps, configData := loadAndResolve(*configPath, *profileName)
-
-	// Validate steps against policy.
-	for _, s := range steps {
-		if err := cfg.Policy.ValidateStep(s.Type, s.ID); err != nil {
-			slog.Error(i18n.T("err.policy_violation"), "error", err)
-			os.Exit(1)
-		}
-	}
-
-	p, err := plan.Build(cfg.Project.Name, *profileName, steps, configData)
-	if err != nil {
-		slog.Error(i18n.T("err.build_plan"), "error", err)
-		os.Exit(1)
-	}
-
-	outDir := ".foundry/out"
-	if writeErr := plan.WritePlan(p, outDir); writeErr != nil {
-		slog.Error(i18n.T("err.write_plan"), "error", writeErr)
-		os.Exit(1)
-	}
+	p, _ := buildAndWritePlan(*configPath, *profileName)
 
 	if *jsonOut {
 		enc := json.NewEncoder(os.Stdout)
@@ -239,26 +219,7 @@ func cmdRun(args []string) {
 
 	setupLogger(*jsonOut)
 
-	cfg, steps, configData := loadAndResolve(*configPath, *profileName)
-
-	for _, s := range steps {
-		if err := cfg.Policy.ValidateStep(s.Type, s.ID); err != nil {
-			slog.Error(i18n.T("err.policy_violation"), "error", err)
-			os.Exit(1)
-		}
-	}
-
-	p, err := plan.Build(cfg.Project.Name, *profileName, steps, configData)
-	if err != nil {
-		slog.Error(i18n.T("err.build_plan"), "error", err)
-		os.Exit(1)
-	}
-
-	outDir := ".foundry/out"
-	if writeErr := plan.WritePlan(p, outDir); writeErr != nil {
-		slog.Error(i18n.T("err.write_plan"), "error", writeErr)
-		os.Exit(1)
-	}
+	p, outDir := buildAndWritePlan(*configPath, *profileName)
 
 	// Execute with signal handling.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -300,6 +261,30 @@ func cmdRun(args []string) {
 }
 
 // --- helpers ---
+
+func buildAndWritePlan(configPath, profileName string) (*plan.Plan, string) {
+	cfg, steps, configData := loadAndResolve(configPath, profileName)
+
+	for _, s := range steps {
+		if err := cfg.Policy.ValidateStep(s.Type, s.ID); err != nil {
+			slog.Error(i18n.T("err.policy_violation"), "error", err)
+			os.Exit(1)
+		}
+	}
+
+	p, err := plan.Build(cfg.Project.Name, profileName, steps, configData)
+	if err != nil {
+		slog.Error(i18n.T("err.build_plan"), "error", err)
+		os.Exit(1)
+	}
+
+	outDir := ".foundry/out"
+	if writeErr := plan.WritePlan(p, outDir); writeErr != nil {
+		slog.Error(i18n.T("err.write_plan"), "error", writeErr)
+		os.Exit(1)
+	}
+	return p, outDir
+}
 
 // loadAndResolve loads config, resolves the profile, and returns raw config bytes.
 func loadAndResolve(configPath, profileName string) (*config.Config, []config.Step, []byte) {
