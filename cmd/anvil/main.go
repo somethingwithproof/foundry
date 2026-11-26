@@ -9,12 +9,15 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/foundry-ci/foundry/internal/config"
 	"github.com/foundry-ci/foundry/internal/exec"
+	"github.com/foundry-ci/foundry/internal/i18n"
 	"github.com/foundry-ci/foundry/internal/plan"
 )
 
@@ -24,41 +27,67 @@ var (
 	buildDate = "unknown"
 )
 
+func extractGlobalLang(args []string) (string, []string) {
+	var lang string
+	var rest []string
+	for i := 0; i < len(args); i++ {
+		arg := args[i]
+		if arg == "--" {
+			rest = append(rest, args[i:]...)
+			break
+		}
+		if arg == "--lang" && i+1 < len(args) {
+			lang = args[i+1]
+			i++
+			continue
+		}
+		if strings.HasPrefix(arg, "--lang=") {
+			lang = strings.TrimPrefix(arg, "--lang=")
+			continue
+		}
+		rest = append(rest, arg)
+	}
+	return lang, rest
+}
+
 func main() {
-	if len(os.Args) < 2 {
-		printUsage()
+	globalLang, args := extractGlobalLang(os.Args[1:])
+	i18n.Init(globalLang)
+
+	if len(args) < 1 {
+		printUsage(os.Stderr)
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
+	switch args[0] {
 	case "version", "--version":
-		cmdVersion(os.Args[2:])
+		cmdVersion(args[1:])
 	case "doctor":
-		cmdDoctor(os.Args[2:])
+		cmdDoctor(args[1:])
 	case "plan":
-		cmdPlan(os.Args[2:])
+		cmdPlan(args[1:])
 	case "run":
-		cmdRun(os.Args[2:])
+		cmdRun(args[1:])
+	case "help", "--help", "-h":
+		printUsage(os.Stdout)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown command: %s\n\n", os.Args[1])
-		printUsage()
+		fmt.Fprintf(os.Stderr, "%s\n\n", i18n.T("err.unknown_command", args[0]))
+		printUsage(os.Stderr)
 		os.Exit(1)
 	}
 }
 
-func printUsage() {
-	fmt.Fprint(os.Stderr, `Foundry — CI/CD engine
-
-Usage: anvil <command> [flags]
-
-Commands:
-  version    Print version information
-  doctor     Check environment and configuration
-  plan       Generate an execution plan
-  run        Execute the plan
-
-Use "anvil <command> --help" for more information.
-`)
+func printUsage(w io.Writer) {
+	_, _ = fmt.Fprintf(w, "%s\n\n%s\n\n%s\n  version    %s\n  doctor     %s\n  plan       %s\n  run        %s\n\n%s\n",
+		i18n.T("usage.header"),
+		i18n.T("usage.syntax"),
+		i18n.T("usage.commands"),
+		i18n.T("usage.cmd.version"),
+		i18n.T("usage.cmd.doctor"),
+		i18n.T("usage.cmd.plan"),
+		i18n.T("usage.cmd.run"),
+		i18n.T("usage.help_hint"),
+	)
 }
 
 func setupLogger(jsonOutput bool) {
@@ -75,9 +104,13 @@ func setupLogger(jsonOutput bool) {
 
 func cmdVersion(args []string) {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
-	jsonOut := fs.Bool("json", false, "output as JSON")
+	jsonOut := fs.Bool("json", false, i18n.T("flag.json"))
+	lang := fs.String("lang", "", i18n.T("flag.lang"))
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
+	}
+	if *lang != "" {
+		i18n.Init(*lang)
 	}
 
 	if *jsonOut {
@@ -89,7 +122,7 @@ func cmdVersion(args []string) {
 			"build_date": buildDate,
 		})
 	} else {
-		fmt.Printf("anvil %s (commit %s, built %s)\n", version, commit, buildDate)
+		fmt.Println(i18n.T("version.line", version, commit, buildDate))
 	}
 }
 
@@ -97,9 +130,13 @@ func cmdVersion(args []string) {
 
 func cmdDoctor(args []string) {
 	fs := flag.NewFlagSet("doctor", flag.ContinueOnError)
-	configPath := fs.String("config", ".foundry.yaml", "config file path")
+	configPath := fs.String("config", ".foundry.yaml", i18n.T("flag.config"))
+	lang := fs.String("lang", "", i18n.T("flag.lang"))
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
+	}
+	if *lang != "" {
+		i18n.Init(*lang)
 	}
 
 	setupLogger(false)
@@ -107,80 +144,64 @@ func cmdDoctor(args []string) {
 
 	// Check 1: config file exists.
 	if _, err := os.Stat(*configPath); err != nil {
-		fmt.Printf("FAIL  %s not found\n", *configPath)
+		fmt.Println(i18n.T("doctor.config_missing", *configPath))
 		allPass = false
 	} else {
-		fmt.Printf("PASS  %s exists\n", *configPath)
+		fmt.Println(i18n.T("doctor.config_exists", *configPath))
 	}
 
 	// Check 2: config parses and validates.
 	if _, err := config.Load(*configPath); err != nil {
-		fmt.Printf("FAIL  config validation: %v\n", err)
+		fmt.Println(i18n.T("doctor.config_invalid", err))
 		allPass = false
 	} else {
-		fmt.Printf("PASS  config parses and validates\n")
+		fmt.Println(i18n.T("doctor.config_valid"))
 	}
 
 	// Check 3: go is available.
 	if err := exec.CheckTool("go", "version"); err != nil {
-		fmt.Printf("FAIL  go not available: %v\n", err)
+		fmt.Println(i18n.T("doctor.go_missing", err))
 		allPass = false
 	} else {
-		fmt.Printf("PASS  go is available\n")
+		fmt.Println(i18n.T("doctor.go_available"))
 	}
 
 	if !allPass {
 		os.Exit(1)
 	}
-	fmt.Println("\nAll checks passed.")
+	fmt.Printf("\n%s\n", i18n.T("doctor.all_passed"))
 }
 
 // --- plan ---
 
 func cmdPlan(args []string) {
 	fs := flag.NewFlagSet("plan", flag.ContinueOnError)
-	profileName := fs.String("profile", "default", "profile name")
-	configPath := fs.String("config", ".foundry.yaml", "config file path")
-	jsonOut := fs.Bool("json", false, "output as JSON")
+	profileName := fs.String("profile", "default", i18n.T("flag.profile"))
+	configPath := fs.String("config", ".foundry.yaml", i18n.T("flag.config"))
+	jsonOut := fs.Bool("json", false, i18n.T("flag.json"))
+	lang := fs.String("lang", "", i18n.T("flag.lang"))
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
+	}
+	if *lang != "" {
+		i18n.Init(*lang)
 	}
 
 	setupLogger(*jsonOut)
 
-	cfg, steps, configData := loadAndResolve(*configPath, *profileName)
-
-	// Validate steps against policy.
-	for _, s := range steps {
-		if err := cfg.Policy.ValidateStep(s.Type, s.ID); err != nil {
-			slog.Error("policy violation", "error", err)
-			os.Exit(1)
-		}
-	}
-
-	p, err := plan.Build(cfg.Project.Name, *profileName, steps, configData)
-	if err != nil {
-		slog.Error("failed to build plan", "error", err)
-		os.Exit(1)
-	}
-
-	outDir := ".foundry/out"
-	if writeErr := plan.WritePlan(p, outDir); writeErr != nil {
-		slog.Error("failed to write plan", "error", writeErr)
-		os.Exit(1)
-	}
+	p, _ := buildAndWritePlan(*configPath, *profileName)
 
 	if *jsonOut {
 		enc := json.NewEncoder(os.Stdout)
 		enc.SetIndent("", "  ")
 		_ = enc.Encode(p)
 	} else {
-		fmt.Printf("Plan generated: %d steps, profile=%s\n", len(p.Steps), *profileName)
-		fmt.Println("Execution order:")
+		fmt.Println(i18n.T("plan.generated", len(p.Steps), *profileName))
+		fmt.Println(i18n.T("plan.execution_order"))
 		for i, id := range p.Order {
 			fmt.Printf("  %d. %s\n", i+1, id)
 		}
-		fmt.Println("Written to .foundry/out/plan.json")
+		fmt.Println(i18n.T("plan.written"))
 	}
 }
 
@@ -188,36 +209,21 @@ func cmdPlan(args []string) {
 
 func cmdRun(args []string) {
 	fs := flag.NewFlagSet("run", flag.ContinueOnError)
-	profileName := fs.String("profile", "default", "profile name")
-	configPath := fs.String("config", ".foundry.yaml", "config file path")
-	jobs := fs.Int("jobs", 4, "max parallel jobs")
-	jsonOut := fs.Bool("json", false, "output as JSON")
+	profileName := fs.String("profile", "default", i18n.T("flag.profile"))
+	configPath := fs.String("config", ".foundry.yaml", i18n.T("flag.config"))
+	jobs := fs.Int("jobs", 4, i18n.T("flag.jobs"))
+	jsonOut := fs.Bool("json", false, i18n.T("flag.json"))
+	lang := fs.String("lang", "", i18n.T("flag.lang"))
 	if err := fs.Parse(args); err != nil {
 		os.Exit(1)
+	}
+	if *lang != "" {
+		i18n.Init(*lang)
 	}
 
 	setupLogger(*jsonOut)
 
-	cfg, steps, configData := loadAndResolve(*configPath, *profileName)
-
-	for _, s := range steps {
-		if err := cfg.Policy.ValidateStep(s.Type, s.ID); err != nil {
-			slog.Error("policy violation", "error", err)
-			os.Exit(1)
-		}
-	}
-
-	p, err := plan.Build(cfg.Project.Name, *profileName, steps, configData)
-	if err != nil {
-		slog.Error("failed to build plan", "error", err)
-		os.Exit(1)
-	}
-
-	outDir := ".foundry/out"
-	if writeErr := plan.WritePlan(p, outDir); writeErr != nil {
-		slog.Error("failed to write plan", "error", writeErr)
-		os.Exit(1)
-	}
+	p, outDir := buildAndWritePlan(*configPath, *profileName)
 
 	// Execute with signal handling.
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -229,12 +235,12 @@ func cmdRun(args []string) {
 
 	results, err := exec.Execute(ctx, p, opts)
 	if err != nil {
-		slog.Error("execution failed", "error", err)
+		slog.Error(i18n.T("err.execution_failed"), "error", err)
 		os.Exit(1)
 	}
 
 	if err := exec.WriteResults(results, outDir); err != nil {
-		slog.Error("failed to write results", "error", err)
+		slog.Error(i18n.T("err.write_results"), "error", err)
 		os.Exit(1)
 	}
 
@@ -243,7 +249,7 @@ func cmdRun(args []string) {
 		enc.SetIndent("", "  ")
 		_ = enc.Encode(results)
 	} else {
-		fmt.Printf("\nExecution %s (%s)\n", results.Status, results.Duration)
+		fmt.Printf("\n%s\n", i18n.T("run.summary", results.Status, results.Duration))
 		for _, sr := range results.Steps {
 			marker := "✓"
 			if sr.Status != "success" {
@@ -260,23 +266,47 @@ func cmdRun(args []string) {
 
 // --- helpers ---
 
+func buildAndWritePlan(configPath, profileName string) (*plan.Plan, string) {
+	cfg, steps, configData := loadAndResolve(configPath, profileName)
+
+	for _, s := range steps {
+		if err := cfg.Policy.ValidateStep(s.Type, s.ID); err != nil {
+			slog.Error(i18n.T("err.policy_violation"), "error", err)
+			os.Exit(1)
+		}
+	}
+
+	p, err := plan.Build(cfg.Project.Name, profileName, steps, configData)
+	if err != nil {
+		slog.Error(i18n.T("err.build_plan"), "error", err)
+		os.Exit(1)
+	}
+
+	outDir := ".foundry/out"
+	if writeErr := plan.WritePlan(p, outDir); writeErr != nil {
+		slog.Error(i18n.T("err.write_plan"), "error", writeErr)
+		os.Exit(1)
+	}
+	return p, outDir
+}
+
 // loadAndResolve loads config, resolves the profile, and returns raw config bytes.
 func loadAndResolve(configPath, profileName string) (*config.Config, []config.Step, []byte) {
 	cfg, err := config.Load(configPath)
 	if err != nil {
-		slog.Error("failed to load config", "path", configPath, "error", err)
+		slog.Error(i18n.T("err.load_config"), "path", configPath, "error", err)
 		os.Exit(1)
 	}
 
 	steps, err := config.ResolveProfile(cfg, profileName)
 	if err != nil {
-		slog.Error("failed to resolve profile", "profile", profileName, "error", err)
+		slog.Error(i18n.T("err.resolve_profile"), "profile", profileName, "error", err)
 		os.Exit(1)
 	}
 
 	configData, err := config.RawBytes(configPath)
 	if err != nil {
-		slog.Error("failed to read config bytes", "error", err)
+		slog.Error(i18n.T("err.read_config"), "error", err)
 		os.Exit(1)
 	}
 
