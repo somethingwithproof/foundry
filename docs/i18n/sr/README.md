@@ -62,8 +62,8 @@ bin/anvil run --profile default --jobs 4
 Алат `anvil` садржи уграђене преводе за 48 језичких ознака (20 Tier 1, 15 афричких, 10 азијских и 3 јужнословенске). Избор језика прати променљиве `LC_ALL`, `LC_MESSAGES` и `LANG`, а може се променити заставицом `--lang`:
 
 ```bash
-anvil --lang de doctor
-LANG=ja_JP.UTF-8 anvil version
+bin/anvil --lang de doctor
+LANG=ja_JP.UTF-8 bin/anvil version
 ```
 
 ## Развој
