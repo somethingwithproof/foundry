@@ -32,6 +32,10 @@ func extractGlobalLang(args []string) (string, []string) {
 	var rest []string
 	for i := 0; i < len(args); i++ {
 		arg := args[i]
+		if arg == "--" {
+			rest = append(rest, args[i:]...)
+			break
+		}
 		if arg == "--lang" && i+1 < len(args) {
 			lang = args[i+1]
 			i++
