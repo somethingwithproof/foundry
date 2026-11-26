@@ -55,12 +55,25 @@ bin/anvil run --profile default --jobs 4
 
 | Command | Options |
 | --- | --- |
-| `doctor` | `--config` |
-| `plan` | `--config`, `--profile`, `--json` |
-| `run` | `--config`, `--profile`, `--jobs`, `--json` |
-| `version` | `--json` |
+| `doctor` | `--config`, `--lang` |
+| `plan` | `--config`, `--profile`, `--json`, `--lang` |
+| `run` | `--config`, `--profile`, `--jobs`, `--json`, `--lang` |
+| `version` | `--json`, `--lang` |
 
 The default configuration is `.foundry.yaml`, the default profile is `default`, and run concurrency defaults to four jobs. Commands execute with the caller's privileges. Review configuration from untrusted sources before running it.
+
+## Localization
+
+`anvil` ships with embedded translations for 20 Tier 1 locales (`en`, `de`, `es`, `fr`, `it`, `pt-BR`, `nl`, `ru`, `uk`, `ja`, `ko`, `zh-CN`, `zh-TW`, `ar`, `hi`, `pl`, `tr`, `sv`, `vi`, `id`).
+
+Locale selection follows standard POSIX precedence (`LC_ALL`, then `LC_MESSAGES`, then `LANG`) and can be overridden with `--lang`:
+
+```bash
+anvil --lang de doctor
+LANG=ja_JP.UTF-8 anvil version
+```
+
+Unset, `C`, `POSIX`, and unrecognized locales default to English.
 
 ## Development
 
